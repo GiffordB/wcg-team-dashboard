@@ -11,7 +11,7 @@
   then they show her most recently completed season instead.
 </p>
 
-{% if not levels %}
+{% if not all_levels %}
   <div class="empty-state">
     No gymnasts on the active roster yet. Run the scraper to auto-add optional-level
     gymnasts from the team page, or <a href="{{ url_for('manage_roster') }}">add one by hand</a>.
@@ -25,9 +25,20 @@
   </div>
   <div class="stat-tile">
     <p class="label">Levels Represented</p>
-    <p class="value accent-blue">{{ levels|length }}</p>
+    <p class="value accent-blue">{{ all_levels|length }}</p>
   </div>
 </div>
+
+<div class="filter-row">
+  <a href="{{ url_for('team_roster') }}" class="{{ 'active' if not level_filter }}">All Levels</a>
+  {% for lvl in all_levels %}
+    <a href="{{ url_for('team_roster', level=lvl) }}" class="{{ 'active' if lvl == level_filter }}">Level {{ lvl }}</a>
+  {% endfor %}
+</div>
+
+{% if not levels %}
+  <div class="empty-state">No gymnasts at this level.</div>
+{% endif %}
 
 {% for level, rows in levels %}
 <div class="card">

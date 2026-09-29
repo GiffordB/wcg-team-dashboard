@@ -234,8 +234,20 @@ def team_roster():
     db = get_db()
     levels = team_roster_rows(db)
     total_active = sum(len(rows) for _, rows in levels)
+    all_levels = [lvl for lvl, _ in levels]
+
+    level_filter = request.args.get("level")
+    if level_filter:
+        levels = [(lvl, rows) for lvl, rows in levels if lvl == level_filter]
+
     db.close()
-    return render_template("roster.html", levels=levels, total_active=total_active)
+    return render_template(
+        "roster.html",
+        levels=levels,
+        total_active=total_active,
+        all_levels=all_levels,
+        level_filter=level_filter,
+    )
 
 
 @app.route("/athlete/<gymnast_id>")

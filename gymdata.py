@@ -23,9 +23,11 @@ def gymnast_url(gymnast_id):
 # the lower Xcel tiers (Bronze/Silver) or compulsory JO levels 1-5.
 OPTIONAL_LEVELS = {"6", "7", "8", "9", "10", "XG", "XP", "XD"}
 
-# Rough coaching-hierarchy order for sorting/grouping a roster - JO levels
-# ascending, then the Xcel tiers this gym runs alongside them.
-LEVEL_ORDER = ["6", "7", "8", "9", "10", "XG", "XP", "XD"]
+# Rough coaching-hierarchy order for sorting/grouping a roster - most
+# advanced first: JO levels descending (10 down to 6), then the Xcel tiers
+# this gym runs alongside them, also most-advanced-first (Diamond, then
+# Platinum, then Gold).
+LEVEL_ORDER = ["10", "9", "8", "7", "6", "XD", "XP", "XG"]
 
 EVENTS = ["vault", "bars", "beam", "floor"]
 EVENT_LABELS = {"vault": "Vault", "bars": "Bars", "beam": "Beam", "floor": "Floor"}
