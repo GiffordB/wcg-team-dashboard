@@ -75,6 +75,17 @@ def place_class(place):
     return ""
 
 
+@app.template_filter("season_label")
+def season_label(meet_date):
+    """'2023-10-27' -> '2023-24' - which July-June season a meet date falls
+    in. Used on meet tables so a level that spans two seasons (not unusual -
+    a gymnast can compete a level into the fall of the next one) still
+    reads clearly on the full-history-by-level view."""
+    d = date.fromisoformat(meet_date)
+    start_year = d.year if d.month >= 7 else d.year - 1
+    return f"{start_year}-{str(start_year + 1)[2:]}"
+
+
 # ---------------------------------------------------------------------
 # Data-shaping helpers
 # ---------------------------------------------------------------------
@@ -240,6 +251,17 @@ def athlete(gymnast_id):
     stats = summary_stats(season_meets)
     db.close()
 
+    # Full history, filterable by level (cumulative across every season at
+    # that level, not just the current one) - defaults to whatever level
+    # her most recent meet was at, since that's guaranteed to have data
+    # (her current level_override might not, if she hasn't competed at it
+    # yet - the badge up top still shows that, this tab just can't).
+    levels = sorted({m["level"] for m in meets}, key=level_sort_key)
+    default_level = meets[-1]["level"] if meets else None
+    selected_level = request.args.get("level") or default_level
+    level_meets = [m for m in meets if m["level"] == selected_level] if selected_level else []
+    level_stats = summary_stats(level_meets)
+
     return render_template(
         "athlete.html",
         gymnast=gymnast,
@@ -250,6 +272,12 @@ def athlete(gymnast_id):
         event_chart=event_trend_chart(season_meets) if season_meets else None,
         has_any_meets=bool(meets),
         is_current_season=is_current_season,
+        levels=levels,
+        selected_level=selected_level,
+        level_stats=level_stats,
+        level_meets=list(reversed(level_meets)),
+        level_aa_chart=aa_trend_chart(level_meets) if level_meets else None,
+        level_event_chart=event_trend_chart(level_meets) if level_meets else None,
     )
 
 

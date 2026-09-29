@@ -39,23 +39,21 @@
   </footer>
 
   <script>
-    // Lets a chart's own legend act as an event filter, and lets links
+    // Lets each chart's own legend act as an event filter, and lets links
     // elsewhere land here with one event already spotlighted, via a
-    // #event-<slug> hash - e.g. #event-vault.
+    // #event-<slug> hash - e.g. #event-vault. A page can have more than
+    // one of these (e.g. a "this season" chart and a "by level" chart) -
+    // each tracks its own spotlight state independently.
     (function () {
-      var trend = document.getElementById('event-trend');
-      if (!trend) return;
+      var trends = document.querySelectorAll('.event-trend');
+      if (!trends.length) return;
 
-      function applyEmphasis(slug) {
+      function applyEmphasis(trend, slug) {
         trend.querySelectorAll('[data-series]').forEach(function (el) {
           var match = el.getAttribute('data-series') === slug;
-          if (!slug || match) {
-            el.style.opacity = '';
-          } else {
-            el.style.opacity = '0.2';
-          }
+          el.style.opacity = (!slug || match) ? '' : '0.2';
           if (el.tagName === 'path') {
-            el.style.strokeWidth = slug && match ? '3' : '';
+            el.style.strokeWidth = (slug && match) ? '3' : '';
           }
         });
         trend.querySelectorAll('.legend-item[data-series]').forEach(function (el) {
@@ -68,23 +66,30 @@
         return m ? m[1] : null;
       }
 
-      function setFromHash() {
-        var slug = slugFromHash();
-        applyEmphasis(slug);
-        if (slug) trend.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      trends.forEach(function (trend) {
+        var current = null;
 
-      trend.querySelectorAll('.legend-item[data-series]').forEach(function (item) {
-        item.addEventListener('click', function () {
-          var slug = item.getAttribute('data-series');
-          var next = slugFromHash() === slug ? '' : 'event-' + slug;
-          history.replaceState(null, '', next ? '#' + next : window.location.pathname + window.location.search);
-          applyEmphasis(next ? slug : null);
+        function setFromHash() {
+          var slug = slugFromHash();
+          current = slug;
+          applyEmphasis(trend, slug);
+          if (slug) trend.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        trend.querySelectorAll('.legend-item[data-series]').forEach(function (item) {
+          item.addEventListener('click', function () {
+            var slug = item.getAttribute('data-series');
+            var next = current === slug ? null : slug;
+            current = next;
+            applyEmphasis(trend, next);
+            var hash = next ? '#event-' + next : window.location.pathname + window.location.search;
+            history.replaceState(null, '', hash);
+          });
         });
-      });
 
-      window.addEventListener('hashchange', setFromHash);
-      setFromHash();
+        window.addEventListener('hashchange', setFromHash);
+        setFromHash();
+      });
     })();
   </script>
 </body>

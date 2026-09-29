@@ -83,7 +83,7 @@
   </div>
   {% endif %}
   {% if event_chart %}
-  <div class="card" id="event-trend">
+  <div class="card event-trend">
     <h2>Event Scores Trend</h2>
     <p class="card-sub">Vault, Bars, Beam, Floor &mdash; click the legend to spotlight one</p>
     {{ event_chart }}
@@ -124,6 +124,95 @@
   </table>
   </div>
 </div>
+{% endif %}
+
+<div class="page-head" style="margin-top: 8px;">
+  <h2 style="margin:0;">Full History by Level</h2>
+</div>
+
+<div class="filter-row">
+  {% for lvl in levels %}
+    <a href="{{ url_for('athlete', gymnast_id=gymnast.id, level=lvl) }}" class="{{ 'active' if lvl == selected_level }}">Level {{ lvl }}</a>
+  {% endfor %}
+</div>
+
+{% if not level_meets %}
+  <div class="empty-state">No meets recorded for this level yet.</div>
+{% else %}
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <p class="label">Meets</p>
+    <p class="value accent-blue">{{ level_stats.meet_count }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">Best AA</p>
+    <p class="value accent-pink">{{ '%.3f'|format(level_stats.best_aa) if level_stats.best_aa is not none else '—' }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">Average AA</p>
+    <p class="value">{{ '%.3f'|format(level_stats.avg_aa) if level_stats.avg_aa is not none else '—' }}</p>
+  </div>
+  {% for ev in events %}
+  <div class="stat-tile">
+    <p class="label">Best {{ event_labels[ev] }}</p>
+    <p class="value">{{ '%.3f'|format(level_stats['best_' ~ ev]) if level_stats['best_' ~ ev] is not none else '—' }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card-grid">
+  {% if level_aa_chart %}
+  <div class="card">
+    <h2>All-Around Trend</h2>
+    <p class="card-sub">Level {{ selected_level }}, meet-by-meet, oldest to newest</p>
+    {{ level_aa_chart }}
+  </div>
+  {% endif %}
+  {% if level_event_chart %}
+  <div class="card event-trend">
+    <h2>Event Scores Trend</h2>
+    <p class="card-sub">Vault, Bars, Beam, Floor &mdash; click the legend to spotlight one</p>
+    {{ level_event_chart }}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Every Meet at Level {{ selected_level }}</h2>
+  <p class="card-sub">Across every season at this level</p>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th><th>Season</th><th>Meet</th><th>Division</th>
+        <th>Vault</th><th>Bars</th><th>Beam</th><th>Floor</th><th>AA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in level_meets %}
+      <tr>
+        <td>{{ m.meet_date }}</td>
+        <td>{{ m.meet_date|season_label }}</td>
+        <td>{{ m.meet_name }}</td>
+        <td>{{ m.division or '—' }}</td>
+        {% for ev in events %}
+        <td class="score-cell">
+          {{ '%.3f'|format(m[ev]) if m[ev] is not none else '—' }}
+          {% if m[ev ~ '_place'] %}<span class="place-pill {{ m[ev ~ '_place']|place_class }}">{{ m[ev ~ '_place'] }}</span>{% endif %}
+        </td>
+        {% endfor %}
+        <td class="score-cell">
+          {{ '%.3f'|format(m.aa) if m.aa is not none else '—' }}
+          {% if m.aa_place %}<span class="place-pill {{ m.aa_place|place_class }}">{{ m.aa_place }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
 {% endif %}
 
 {% endif %}
