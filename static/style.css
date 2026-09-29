@@ -259,6 +259,19 @@ table.data-table td {
 table.data-table tr:hover td { background: var(--surface-2); }
 .table-scroll { overflow-x: auto; }
 
+table.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+table.data-table th.sortable:hover { color: var(--text); }
+table.data-table th.sortable::after {
+  content: "\2195";
+  margin-left: 4px;
+  opacity: 0.35;
+}
+table.data-table th.sortable[data-dir="asc"]::after { content: "\2191"; opacity: 1; }
+table.data-table th.sortable[data-dir="desc"]::after { content: "\2193"; opacity: 1; }
+
 .score-cell { font-variant-numeric: tabular-nums; font-weight: 600; }
 .place-pill {
   display: inline-block;

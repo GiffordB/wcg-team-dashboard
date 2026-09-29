@@ -48,8 +48,13 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th><th>Latest Meet</th><th>Vault</th><th>Bars</th><th>Beam</th><th>Floor</th><th>AA</th>
-        <th>Meets This Season</th><th>Season Best AA</th>
+        <th>Name</th><th>Latest Meet</th>
+        {% for ev in events %}
+        <th class="sortable" data-sort="{{ ev }}">{{ event_labels[ev] }}</th>
+        {% endfor %}
+        <th class="sortable" data-sort="aa">AA</th>
+        <th>Meets This Season</th>
+        <th class="sortable" data-sort="best_aa">Season Best AA</th>
       </tr>
     </thead>
     <tbody>
@@ -59,12 +64,12 @@
         {% if r.latest %}
           <td>{{ r.latest.meet_date }}</td>
           {% for ev in events %}
-          <td class="score-cell">
+          <td class="score-cell" data-col="{{ ev }}" data-value="{{ r.latest[ev] if r.latest[ev] is not none else '' }}">
             {{ '%.3f'|format(r.latest[ev]) if r.latest[ev] is not none else '—' }}
             {% if r.latest[ev ~ '_place'] %}<span class="place-pill {{ r.latest[ev ~ '_place']|place_class }}">{{ r.latest[ev ~ '_place'] }}</span>{% endif %}
           </td>
           {% endfor %}
-          <td class="score-cell">
+          <td class="score-cell" data-col="aa" data-value="{{ r.latest.aa if r.latest.aa is not none else '' }}">
             {{ '%.3f'|format(r.latest.aa) if r.latest.aa is not none else '—' }}
             {% if r.latest.aa_place %}<span class="place-pill {{ r.latest.aa_place|place_class }}">{{ r.latest.aa_place }}</span>{% endif %}
           </td>
@@ -72,7 +77,7 @@
           <td colspan="6" class="score-cell" style="color:var(--text-faint);">no meets yet</td>
         {% endif %}
         <td>{{ r.season_meet_count }}</td>
-        <td class="score-cell">{{ '%.3f'|format(r.season_best_aa) if r.season_best_aa is not none else '—' }}</td>
+        <td class="score-cell" data-col="best_aa" data-value="{{ r.season_best_aa if r.season_best_aa is not none else '' }}">{{ '%.3f'|format(r.season_best_aa) if r.season_best_aa is not none else '—' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -82,4 +87,40 @@
 {% endfor %}
 
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Each level's table sorts independently - clicking a sortable header
+  // only ever reorders the rows within that one table.
+  (function () {
+    document.querySelectorAll('table.data-table').forEach(function (table) {
+      var headers = table.querySelectorAll('th.sortable');
+      if (!headers.length) return;
+
+      headers.forEach(function (th) {
+        th.addEventListener('click', function () {
+          var key = th.getAttribute('data-sort');
+          var asc = th.getAttribute('data-dir') !== 'asc';
+          headers.forEach(function (h) { h.removeAttribute('data-dir'); });
+          th.setAttribute('data-dir', asc ? 'asc' : 'desc');
+
+          var tbody = table.querySelector('tbody');
+          var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+          rows.sort(function (a, b) {
+            var ac = a.querySelector('[data-col="' + key + '"]');
+            var bc = b.querySelector('[data-col="' + key + '"]');
+            var av = ac && ac.getAttribute('data-value') !== '' ? parseFloat(ac.getAttribute('data-value')) : null;
+            var bv = bc && bc.getAttribute('data-value') !== '' ? parseFloat(bc.getAttribute('data-value')) : null;
+            if (av === null && bv === null) return 0;
+            if (av === null) return 1;
+            if (bv === null) return -1;
+            return asc ? av - bv : bv - av;
+          });
+          rows.forEach(function (r) { tbody.appendChild(r); });
+        });
+      });
+    });
+  })();
+</script>
 {% endblock %}
