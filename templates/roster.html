@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Team Roster - {{ gym_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Optional Team Roster</h1>
+</div>
+
+<p class="subtitle" style="color:var(--text-muted);margin-top:-8px;">
+  "Season" columns show the current season once it has meets logged; until
+  then they show her most recently completed season instead.
+</p>
+
+{% if not levels %}
+  <div class="empty-state">
+    No gymnasts on the active roster yet. Run the scraper to auto-add optional-level
+    gymnasts from the team page, or <a href="{{ url_for('manage_roster') }}">add one by hand</a>.
+  </div>
+{% else %}
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <p class="label">Active Gymnasts</p>
+    <p class="value accent-pink">{{ total_active }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">Levels Represented</p>
+    <p class="value accent-blue">{{ levels|length }}</p>
+  </div>
+</div>
+
+{% for level, rows in levels %}
+<div class="card">
+  <h2>Level {{ level }}</h2>
+  <p class="card-sub">{{ rows|length }} gymnast{{ '' if rows|length == 1 else 's' }}</p>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th><th>Latest Meet</th><th>Vault</th><th>Bars</th><th>Beam</th><th>Floor</th><th>AA</th>
+        <th>Meets This Season</th><th>Season Best AA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><a href="{{ url_for('athlete', gymnast_id=r.id) }}">{{ r.name }}</a></td>
+        {% if r.latest %}
+          <td>{{ r.latest.meet_date }}</td>
+          {% for ev in events %}
+          <td class="score-cell">
+            {{ '%.3f'|format(r.latest[ev]) if r.latest[ev] is not none else '—' }}
+            {% if r.latest[ev ~ '_place'] %}<span class="place-pill {{ r.latest[ev ~ '_place']|place_class }}">{{ r.latest[ev ~ '_place'] }}</span>{% endif %}
+          </td>
+          {% endfor %}
+          <td class="score-cell">
+            {{ '%.3f'|format(r.latest.aa) if r.latest.aa is not none else '—' }}
+            {% if r.latest.aa_place %}<span class="place-pill {{ r.latest.aa_place|place_class }}">{{ r.latest.aa_place }}</span>{% endif %}
+          </td>
+        {% else %}
+          <td colspan="6" class="score-cell" style="color:var(--text-faint);">no meets yet</td>
+        {% endif %}
+        <td>{{ r.season_meet_count }}</td>
+        <td class="score-cell">{{ '%.3f'|format(r.season_best_aa) if r.season_best_aa is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}

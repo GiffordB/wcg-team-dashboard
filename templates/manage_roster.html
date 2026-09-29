@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Manage Roster - {{ gym_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Manage Roster</h1>
+</div>
+
+{% if error %}<div class="empty-state" style="border-color:#e34948;color:#e88;">{{ error }}</div>{% endif %}
+{% if message %}<div class="empty-state" style="border-color:var(--good);color:var(--good);">{{ message }}</div>{% endif %}
+
+<p class="subtitle" style="color:var(--text-muted);">
+  The active roster is bootstrapped automatically from the team's mymeetscores page
+  (any optional-level gymnast with a meet in roughly the last season). Use this page
+  for the two cases that can't be auto-detected: someone who's joined but hasn't
+  competed yet, or someone who's left even though her old meets still show up there.
+</p>
+
+<div class="card form-card">
+  <h2>Add a Gymnast</h2>
+  <p class="card-sub">Find her mymeetscores.com gymnast ID from her results page URL (…gymnastid=XXXXXXXX)</p>
+  <form method="post" action="{{ url_for('add_gymnast') }}">
+    <div class="field">
+      <label for="gymnast_id">mymeetscores Gymnast ID</label>
+      <input type="text" id="gymnast_id" name="gymnast_id" inputmode="numeric" pattern="[0-9]+" placeholder="e.g. 21395249" required>
+    </div>
+    <div class="field">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" placeholder="First Last" required>
+    </div>
+    <div class="field">
+      <label for="passcode">Coach Passcode</label>
+      <input type="password" id="passcode" name="passcode" required>
+    </div>
+    <button class="btn" type="submit">Add to Roster</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Full Roster</h2>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Name</th><th>Level</th><th>Source</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for g in gymnasts %}
+      <tr>
+        <td><a href="{{ url_for('athlete', gymnast_id=g.id) }}">{{ g.name }}</a></td>
+        <td>{{ g.level or '—' }}</td>
+        <td>{{ 'Auto' if g.source == 'auto' else 'Manual' }}</td>
+        <td>
+          {% if g.active %}<span class="pill-blue">Active</span>{% else %}<span class="place-pill">Removed</span>{% endif %}
+        </td>
+        <td>
+          {% if g.active %}
+          <form method="post" action="{{ url_for('deactivate_gymnast', gymnast_id=g.id) }}" style="display:flex;gap:6px;align-items:center;">
+            <input type="password" name="passcode" placeholder="passcode" required style="width:110px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
+            <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Remove</button>
+          </form>
+          {% else %}
+          <form method="post" action="{{ url_for('add_gymnast') }}" style="display:flex;gap:6px;align-items:center;">
+            <input type="hidden" name="gymnast_id" value="{{ g.id }}">
+            <input type="hidden" name="name" value="{{ g.name }}">
+            <input type="password" name="passcode" placeholder="passcode" required style="width:110px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
+            <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Re-add</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endblock %}

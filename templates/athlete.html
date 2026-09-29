@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ gymnast.name }} - {{ gym_name }}{% endblock %}
+{% block content %}
+
+<p style="margin: 0 0 12px;"><a href="{{ url_for('team_roster') }}">&larr; Team Roster</a></p>
+
+<div class="hero">
+  <div>
+    <h1>{{ gymnast.name }}</h1>
+    <p class="subtitle">
+      {{ gym_name }}
+      {% if gymnast.team and gymnast.team != gym_name %}
+        &middot; shows as {{ gymnast.team }} on mymeetscores
+      {% endif %}
+    </p>
+  </div>
+  {% if gymnast.level %}<span class="level-badge">Level {{ gymnast.level }}</span>{% endif %}
+</div>
+
+{% if not has_any_meets %}
+  <div class="empty-state">No meet results yet for this gymnast. She'll show up here once mymeetscores has a score on record.</div>
+{% else %}
+
+{% if not is_current_season %}
+<div class="empty-state" style="text-align:left;">
+  No meets yet this season (it runs July 1 &ndash; June 30) &mdash; showing her most recently completed season instead.
+</div>
+{% endif %}
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <p class="label">Latest AA</p>
+    <p class="value accent-pink">{{ '%.3f'|format(latest.aa) if latest.aa is not none else '—' }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">{{ 'Season' if is_current_season else 'Last Season' }} Best AA</p>
+    <p class="value">{{ '%.3f'|format(stats.best_aa) if stats.best_aa is not none else '—' }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">{{ 'Season' if is_current_season else 'Last Season' }} Average AA</p>
+    <p class="value">{{ '%.3f'|format(stats.avg_aa) if stats.avg_aa is not none else '—' }}</p>
+  </div>
+  <div class="stat-tile">
+    <p class="label">Meets {{ 'This' if is_current_season else 'Last' }} Season</p>
+    <p class="value accent-blue">{{ stats.meet_count }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Latest Meet</h2>
+  <p class="card-sub">{{ latest.meet_name }} &middot; {{ latest.meet_date }}{% if latest.division %} &middot; {{ latest.division }}{% endif %}</p>
+  <div class="event-row">
+    {% for ev in events %}
+      <div class="event-tile" style="--border-color: {{ event_colors[ev] }}">
+        <div class="ev-label">{{ event_labels[ev] }}</div>
+        <div class="ev-score">
+          {{ '%.3f'|format(latest[ev]) if latest[ev] is not none else '—' }}
+          {% if latest[ev ~ '_place'] %}
+            <span class="place-pill {{ latest[ev ~ '_place']|place_class }}">{{ latest[ev ~ '_place'] }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    <div class="event-tile" style="--border-color: #f5f5f7">
+      <div class="ev-label">All-Around</div>
+      <div class="ev-score">
+        {{ '%.3f'|format(latest.aa) if latest.aa is not none else '—' }}
+        {% if latest.aa_place %}
+          <span class="place-pill {{ latest.aa_place|place_class }}">{{ latest.aa_place }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-grid">
+  {% if aa_chart %}
+  <div class="card">
+    <h2>All-Around Trend</h2>
+    <p class="card-sub">{{ 'This' if is_current_season else 'Last' }} season, meet-by-meet</p>
+    {{ aa_chart }}
+  </div>
+  {% endif %}
+  {% if event_chart %}
+  <div class="card" id="event-trend">
+    <h2>Event Scores Trend</h2>
+    <p class="card-sub">Vault, Bars, Beam, Floor &mdash; click the legend to spotlight one</p>
+    {{ event_chart }}
+  </div>
+  {% endif %}
+</div>
+
+{% if recent_meets %}
+<div class="card">
+  <h2>Meets {{ 'This' if is_current_season else 'Last' }} Season</h2>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th><th>Meet</th><th>Division</th>
+        <th>Vault</th><th>Bars</th><th>Beam</th><th>Floor</th><th>AA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in recent_meets %}
+      <tr>
+        <td>{{ m.meet_date }}</td>
+        <td>{{ m.meet_name }}</td>
+        <td>{{ m.division or '—' }}</td>
+        {% for ev in events %}
+        <td class="score-cell">
+          {{ '%.3f'|format(m[ev]) if m[ev] is not none else '—' }}
+          {% if m[ev ~ '_place'] %}<span class="place-pill {{ m[ev ~ '_place']|place_class }}">{{ m[ev ~ '_place'] }}</span>{% endif %}
+        </td>
+        {% endfor %}
+        <td class="score-cell">
+          {{ '%.3f'|format(m.aa) if m.aa is not none else '—' }}
+          {% if m.aa_place %}<span class="place-pill {{ m.aa_place|place_class }}">{{ m.aa_place }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

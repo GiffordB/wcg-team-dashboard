@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ gym_name }} - Optional Team{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('team_roster') }}">
+      <span class="brand-mark">{{ brand_initials }}</span>
+      <span>
+        {{ gym_name }}
+        <span class="brand-sub">Optional Team Dashboard</span>
+      </span>
+    </a>
+    <nav class="nav">
+      <a href="{{ url_for('team_roster') }}" class="{{ 'active' if request.endpoint == 'team_roster' }}">Team Roster</a>
+      <a href="{{ url_for('manage_roster') }}" class="{{ 'active' if request.endpoint in ['manage_roster', 'add_gymnast', 'deactivate_gymnast'] }}">Manage Roster</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    {% if sync_status %}
+      <span class="sync-dot {{ 'ok' if sync_status.status == 'ok' else 'error' }}"></span>
+      {% if sync_status.status == 'ok' %}
+        Scores last synced {{ sync_status.ran_at }} UTC &middot; {{ sync_status.gymnasts_scraped }} gymnasts, {{ sync_status.meets_found }} meet-rows
+      {% else %}
+        Last sync attempt had errors ({{ sync_status.ran_at }} UTC) &middot; showing most recent good data
+      {% endif %}
+    {% else %}
+      Scores not synced yet &mdash; run <code>scraper.py</code> to pull results.
+    {% endif %}
+  </footer>
+
+  <script>
+    // Lets a chart's own legend act as an event filter, and lets links
+    // elsewhere land here with one event already spotlighted, via a
+    // #event-<slug> hash - e.g. #event-vault.
+    (function () {
+      var trend = document.getElementById('event-trend');
+      if (!trend) return;
+
+      function applyEmphasis(slug) {
+        trend.querySelectorAll('[data-series]').forEach(function (el) {
+          var match = el.getAttribute('data-series') === slug;
+          if (!slug || match) {
+            el.style.opacity = '';
+          } else {
+            el.style.opacity = '0.2';
+          }
+          if (el.tagName === 'path') {
+            el.style.strokeWidth = slug && match ? '3' : '';
+          }
+        });
+        trend.querySelectorAll('.legend-item[data-series]').forEach(function (el) {
+          el.classList.toggle('legend-active', el.getAttribute('data-series') === slug);
+        });
+      }
+
+      function slugFromHash() {
+        var m = (window.location.hash || '').match(/^#event-([a-z]+)$/);
+        return m ? m[1] : null;
+      }
+
+      function setFromHash() {
+        var slug = slugFromHash();
+        applyEmphasis(slug);
+        if (slug) trend.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      trend.querySelectorAll('.legend-item[data-series]').forEach(function (item) {
+        item.addEventListener('click', function () {
+          var slug = item.getAttribute('data-series');
+          var next = slugFromHash() === slug ? '' : 'event-' + slug;
+          history.replaceState(null, '', next ? '#' + next : window.location.pathname + window.location.search);
+          applyEmphasis(next ? slug : null);
+        });
+      });
+
+      window.addEventListener('hashchange', setFromHash);
+      setFromHash();
+    })();
+  </script>
+</body>
+</html>
