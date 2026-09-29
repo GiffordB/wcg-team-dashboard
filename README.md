@@ -123,3 +123,8 @@ rebuild the roster from mymeetscores' auto-detected data - it has no way
 to recover a manually-added gymnast who hasn't competed yet, or a manual
 removal or level correction. With the disk, `team.db` (and everything in
 it) survives all of that.
+
+`GET /internal/diagnostics?key=<SCRAPE_SECRET>` confirms this from the
+outside - it reports the resolved `DB_PATH`, whether that env var is
+actually set, and whether the directory it points at is a real mount,
+without needing dashboard access.
