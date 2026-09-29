@@ -14,7 +14,8 @@
       {% endif %}
     </p>
   </div>
-  {% if gymnast.level %}<span class="level-badge">Level {{ gymnast.level }}</span>{% endif %}
+  {% set level = effective_level(gymnast) %}
+  {% if level %}<span class="level-badge">Level {{ level }}</span>{% endif %}
 </div>
 
 {% if not has_any_meets %}

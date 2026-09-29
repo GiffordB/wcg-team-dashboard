@@ -54,6 +54,7 @@ def init_db():
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             level TEXT,
+            level_override TEXT,
             team TEXT,
             source TEXT NOT NULL DEFAULT 'manual',
             active INTEGER NOT NULL DEFAULT 1,
@@ -90,6 +91,14 @@ def init_db():
         );
         """
     )
+
+    # Migration: level_override was added after the table already existed
+    # in production - CREATE TABLE IF NOT EXISTS above is a no-op there, so
+    # add the column by hand if it's missing.
+    existing_columns = {row["name"] for row in db.execute("PRAGMA table_info(gymnasts)")}
+    if "level_override" not in existing_columns:
+        db.execute("ALTER TABLE gymnasts ADD COLUMN level_override TEXT")
+
     db.commit()
     db.close()
 

@@ -12,8 +12,9 @@
 <p class="subtitle" style="color:var(--text-muted);">
   The active roster is bootstrapped automatically from the team's mymeetscores page
   (any optional-level gymnast with a meet in roughly the last season). Use this page
-  for the two cases that can't be auto-detected: someone who's joined but hasn't
-  competed yet, or someone who's left even though her old meets still show up there.
+  for what that can't auto-detect: someone who's joined but hasn't competed yet,
+  someone who's left even though her old meets still show up there, or a level that's
+  wrong because she moved up before her first meet at the new level was scraped.
 </p>
 
 <div class="card form-card">
@@ -41,16 +42,28 @@
   <div class="table-scroll">
   <table class="data-table">
     <thead>
-      <tr><th>Name</th><th>Level</th><th>Source</th><th>Status</th><th></th></tr>
+      <tr><th>Name</th><th>Level</th><th>Source</th><th>Status</th><th>Set Level</th><th></th></tr>
     </thead>
     <tbody>
       {% for g in gymnasts %}
       <tr>
         <td><a href="{{ url_for('athlete', gymnast_id=g.id) }}">{{ g.name }}</a></td>
-        <td>{{ g.level or '—' }}</td>
+        <td>
+          {{ effective_level(g) or '—' }}
+          {% if g.level_override and g.level_override != g.level %}
+            <span class="place-pill" title="Detected from her last scraped meet">was {{ g.level or '?' }}</span>
+          {% endif %}
+        </td>
         <td>{{ 'Auto' if g.source == 'auto' else 'Manual' }}</td>
         <td>
           {% if g.active %}<span class="pill-blue">Active</span>{% else %}<span class="place-pill">Removed</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('set_level_override', gymnast_id=g.id) }}" style="display:flex;gap:6px;align-items:center;">
+            <input type="text" name="level_override" placeholder="e.g. 10" value="{{ g.level_override or '' }}" style="width:60px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
+            <input type="password" name="passcode" placeholder="passcode" required style="width:90px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
+            <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Set</button>
+          </form>
         </td>
         <td>
           {% if g.active %}

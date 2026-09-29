@@ -84,6 +84,18 @@ def active_gymnasts(db):
     ).fetchall()
 
 
+def effective_level(gymnast):
+    """The level to actually show/group by. `level` is whatever her most
+    recently scraped meet says; `level_override` is the coach's manual
+    correction for when that's stale or unknowable - most commonly right
+    after a level-up, when she's training the new level but the site has
+    no meet at it yet to detect it from. The override always wins."""
+    return gymnast["level_override"] or gymnast["level"]
+
+
+app.jinja_env.globals["effective_level"] = effective_level
+
+
 def meets_for(db, gymnast_id):
     return db.execute(
         "SELECT * FROM meets WHERE gymnast_id = ? ORDER BY meet_date ASC, id ASC",
@@ -183,7 +195,7 @@ def team_roster_rows(db):
             {
                 "id": gymnast["id"],
                 "name": gymnast["name"],
-                "level": gymnast["level"] or "?",
+                "level": effective_level(gymnast) or "?",
                 "latest": meets[-1] if meets else None,
                 "season_meet_count": stats["meet_count"],
                 "season_best_aa": stats["best_aa"],
@@ -311,6 +323,32 @@ def deactivate_gymnast(gymnast_id):
     db.commit()
     db.close()
     return redirect(url_for("manage_roster", message="Removed from the active roster."))
+
+
+@app.route("/roster/<gymnast_id>/set-level", methods=["POST"])
+def set_level_override(gymnast_id):
+    """Manually correct a gymnast's displayed level - most commonly right
+    after a level-up, when the scraper has no meet at the new level yet to
+    detect it from. Leave the field blank to clear the override and go
+    back to whatever the scraper detects."""
+    error = _check_admin_secret(request.form)
+    if error:
+        return redirect(url_for("manage_roster", error=error))
+
+    level = request.form.get("level_override", "").strip() or None
+    db = get_db()
+    gymnast = db.execute("SELECT name FROM gymnasts WHERE id = ?", (gymnast_id,)).fetchone()
+    if not gymnast:
+        db.close()
+        return redirect(url_for("manage_roster", error="No such gymnast."))
+    db.execute("UPDATE gymnasts SET level_override = ? WHERE id = ?", (level, gymnast_id))
+    db.commit()
+    db.close()
+
+    if level:
+        return redirect(url_for("manage_roster", message=f"Set {gymnast['name']} to Level {level}."))
+    return redirect(url_for("manage_roster", message=f"Cleared the level override for {gymnast['name']}."))
+
 
 
 @app.route("/internal/scrape", methods=["POST"])
