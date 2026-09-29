@@ -113,12 +113,13 @@ the coach can remember and share only with people she trusts to edit the
 roster; it's separate from `SCRAPE_SECRET`, which Render generates on its
 own and which only the scheduled scraper needs to know.
 
-**Free-tier caveat:** Render's free plan spins the app down after 15
-minutes of no traffic and wipes local files (including `team.db`) on
-every restart/redeploy. The app re-seeds itself automatically on startup
-if it finds an empty database, so this mostly self-heals - the one thing
-that does **not** come back on its own is any manual roster edit (an
-add or a remove) made since the last successful scrape, since those live
-only in that wiped database. Re-do them if a restart clears them, or
-upgrade to a paid plan with a persistent disk once this is something the
-gym relies on day to day.
+**Persistent disk:** `render.yaml` provisions a small 1GB disk mounted at
+`/var/data` and points `team.db` at it (`DB_PATH`), on Render's Starter
+plan - disks aren't available on the free plan. This is what makes manual
+roster edits (an add, a remove, a level override) actually stick: without
+a persistent disk, Render wipes local files on every deploy and every
+spin-down/wake cycle, and the app's self-healing re-seed only knows how to
+rebuild the roster from mymeetscores' auto-detected data - it has no way
+to recover a manually-added gymnast who hasn't competed yet, or a manual
+removal or level correction. With the disk, `team.db` (and everything in
+it) survives all of that.

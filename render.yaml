@@ -2,12 +2,18 @@ services:
   - type: web
     name: wcg-team-dashboard
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
+    disk:
+      name: wcg-team-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: DB_PATH
+        value: /var/data/team.db
       - key: SCRAPE_SECRET
         generateValue: true
       - key: ADMIN_SECRET

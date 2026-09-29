@@ -3,11 +3,15 @@ Shared constants, database schema, and helper functions used by both
 app.py (the dashboard website) and scraper.py (the score fetcher).
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "team.db"
+# On Render, DB_PATH points at the mounted persistent disk (see render.yaml)
+# so the roster and meet history survive deploys and spin-down/wake cycles.
+# Local dev has no such disk, so it falls back to a file next to the code.
+DB_PATH = Path(os.environ.get("DB_PATH", BASE_DIR / "team.db"))
 
 # World Class Gymnastics and Cheerleading (Florida) on mymeetscores.com.
 TEAM_ID = "164893"
@@ -41,6 +45,7 @@ def level_sort_key(level):
 
 
 def get_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")

@@ -411,12 +411,11 @@ def inject_sync_status():
 
 
 def seed_if_empty():
-    """On Render's free plan the local disk (including team.db) can be
-    wiped by a redeploy or a spin-down/wake cycle, so every startup checks
-    for that and re-seeds immediately - runs the full bootstrap + roster
-    scrape - rather than waiting for the next scheduled sync or a manual
-    /internal/scrape?force=1. Cheap and idempotent - a non-empty roster
-    just skips this."""
+    """team.db lives on Render's persistent disk, so this only matters for
+    the very first deploy (before the disk has ever been written to) - it
+    runs the full bootstrap + roster scrape immediately instead of waiting
+    for the next scheduled sync or a manual /internal/scrape?force=1.
+    Cheap and idempotent - a non-empty roster just skips this."""
     db = get_db()
     count = db.execute("SELECT COUNT(*) AS c FROM gymnasts").fetchone()["c"]
     db.close()
