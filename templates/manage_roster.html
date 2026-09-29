@@ -44,7 +44,7 @@
   <div class="table-scroll">
   <table class="data-table">
     <thead>
-      <tr><th>Name</th><th>Level</th><th>Source</th><th>Status</th><th>Set Level</th><th></th></tr>
+      <tr><th>Name</th><th>Level</th><th>Source</th><th>Set Level</th><th></th></tr>
     </thead>
     <tbody>
       {% for g in rows %}
@@ -58,9 +58,6 @@
         </td>
         <td>{{ 'Auto' if g.source == 'auto' else 'Manual' }}</td>
         <td>
-          {% if g.active %}<span class="pill-blue">Active</span>{% else %}<span class="place-pill">Removed</span>{% endif %}
-        </td>
-        <td>
           <form method="post" action="{{ url_for('set_level_override', gymnast_id=g.id) }}" style="display:flex;gap:6px;align-items:center;">
             <input type="text" name="level_override" placeholder="e.g. 10" value="{{ g.level_override or '' }}" style="width:60px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
             <input type="password" name="passcode" placeholder="passcode" required style="width:90px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
@@ -68,19 +65,10 @@
           </form>
         </td>
         <td>
-          {% if g.active %}
           <form method="post" action="{{ url_for('deactivate_gymnast', gymnast_id=g.id) }}" style="display:flex;gap:6px;align-items:center;">
             <input type="password" name="passcode" placeholder="passcode" required style="width:110px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
             <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Remove</button>
           </form>
-          {% else %}
-          <form method="post" action="{{ url_for('add_gymnast') }}" style="display:flex;gap:6px;align-items:center;">
-            <input type="hidden" name="gymnast_id" value="{{ g.id }}">
-            <input type="hidden" name="name" value="{{ g.name }}">
-            <input type="password" name="passcode" placeholder="passcode" required style="width:110px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
-            <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Re-add</button>
-          </form>
-          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -89,5 +77,36 @@
   </div>
 </div>
 {% endfor %}
+
+{% if removed %}
+<div class="card">
+  <h2>Removed</h2>
+  <p class="card-sub">{{ removed|length }} gymnast{{ '' if removed|length == 1 else 's' }} no longer on the active roster</p>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Name</th><th>Level</th><th>Source</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for g in removed %}
+      <tr>
+        <td><a href="{{ url_for('athlete', gymnast_id=g.id) }}">{{ g.name }}</a></td>
+        <td>{{ effective_level(g) or '—' }}</td>
+        <td>{{ 'Auto' if g.source == 'auto' else 'Manual' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('add_gymnast') }}" style="display:flex;gap:6px;align-items:center;">
+            <input type="hidden" name="gymnast_id" value="{{ g.id }}">
+            <input type="hidden" name="name" value="{{ g.name }}">
+            <input type="password" name="passcode" placeholder="passcode" required style="width:110px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;">
+            <button class="btn btn-ghost" type="submit" style="padding:4px 10px;font-size:0.8rem;">Re-add</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}

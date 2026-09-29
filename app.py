@@ -223,17 +223,21 @@ def team_roster_rows(db):
 
 
 def manage_roster_rows(db):
-    """Every gymnast, active or removed, grouped by level in the same
-    most-advanced-first order as the Team Roster page - active gymnasts
-    listed above removed ones within each level group."""
+    """Active gymnasts grouped by level, in the same most-advanced-first
+    order as the Team Roster page, plus a separate flat list of removed
+    gymnasts - kept out of the level groups so each one only shows the
+    current active roster, not who used to be there."""
     all_gymnasts = db.execute("SELECT * FROM gymnasts ORDER BY name").fetchall()
     grouped = {}
+    removed = []
     for g in all_gymnasts:
+        if not g["active"]:
+            removed.append(g)
+            continue
         level = effective_level(g) or "?"
         grouped.setdefault(level, []).append(g)
-    for rows in grouped.values():
-        rows.sort(key=lambda r: (r["active"] == 0, r["name"]))
-    return sorted(grouped.items(), key=lambda kv: level_sort_key(kv[0]))
+    levels = sorted(grouped.items(), key=lambda kv: level_sort_key(kv[0]))
+    return levels, removed
 
 
 def last_scrape_status(db):
@@ -310,11 +314,12 @@ def athlete(gymnast_id):
 @app.route("/roster")
 def manage_roster():
     db = get_db()
-    levels = manage_roster_rows(db)
+    levels, removed = manage_roster_rows(db)
     db.close()
     return render_template(
         "manage_roster.html",
         levels=levels,
+        removed=removed,
         error=request.args.get("error"),
         message=request.args.get("message"),
     )
