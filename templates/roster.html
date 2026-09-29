@@ -44,11 +44,15 @@
 <div class="card">
   <h2>Level {{ level }}</h2>
   <p class="card-sub">{{ rows|length }} gymnast{{ '' if rows|length == 1 else 's' }}</p>
+  <div class="view-toggle">
+    <button type="button" class="view-toggle-btn active" data-mode="latest">Latest Meet</button>
+    <button type="button" class="view-toggle-btn" data-mode="best">Level Best</button>
+  </div>
   <div class="table-scroll">
   <table class="data-table">
     <thead>
       <tr>
-        <th>Name</th><th>Latest Meet</th>
+        <th>Name</th><th>Meet Date</th>
         {% for ev in events %}
         <th class="sortable" data-sort="{{ ev }}">{{ event_labels[ev] }}</th>
         {% endfor %}
@@ -62,16 +66,22 @@
       <tr>
         <td><a href="{{ url_for('athlete', gymnast_id=r.id) }}">{{ r.name }}</a></td>
         {% if r.latest %}
-          <td>{{ r.latest.meet_date }}</td>
+          <td data-meet-date="{{ r.latest.meet_date }}">{{ r.latest.meet_date }}</td>
           {% for ev in events %}
-          <td class="score-cell" data-col="{{ ev }}" data-value="{{ r.latest[ev] if r.latest[ev] is not none else '' }}">
-            {{ '%.3f'|format(r.latest[ev]) if r.latest[ev] is not none else '—' }}
-            {% if r.latest[ev ~ '_place'] %}<span class="place-pill {{ r.latest[ev ~ '_place']|place_class }}">{{ r.latest[ev ~ '_place'] }}</span>{% endif %}
+          <td class="score-cell" data-col="{{ ev }}"
+              data-latest="{{ r.latest[ev] if r.latest[ev] is not none else '' }}"
+              data-best="{{ r.level_best[ev] if r.level_best[ev] is not none else '' }}"
+              data-value="{{ r.latest[ev] if r.latest[ev] is not none else '' }}">
+            <span class="cell-value">{{ '%.3f'|format(r.latest[ev]) if r.latest[ev] is not none else '—' }}</span>
+            {% if r.latest[ev ~ '_place'] %}<span class="place-pill cell-place {{ r.latest[ev ~ '_place']|place_class }}">{{ r.latest[ev ~ '_place'] }}</span>{% endif %}
           </td>
           {% endfor %}
-          <td class="score-cell" data-col="aa" data-value="{{ r.latest.aa if r.latest.aa is not none else '' }}">
-            {{ '%.3f'|format(r.latest.aa) if r.latest.aa is not none else '—' }}
-            {% if r.latest.aa_place %}<span class="place-pill {{ r.latest.aa_place|place_class }}">{{ r.latest.aa_place }}</span>{% endif %}
+          <td class="score-cell" data-col="aa"
+              data-latest="{{ r.latest.aa if r.latest.aa is not none else '' }}"
+              data-best="{{ r.level_best.aa if r.level_best.aa is not none else '' }}"
+              data-value="{{ r.latest.aa if r.latest.aa is not none else '' }}">
+            <span class="cell-value">{{ '%.3f'|format(r.latest.aa) if r.latest.aa is not none else '—' }}</span>
+            {% if r.latest.aa_place %}<span class="place-pill cell-place {{ r.latest.aa_place|place_class }}">{{ r.latest.aa_place }}</span>{% endif %}
           </td>
         {% else %}
           <td colspan="6" class="score-cell" style="color:var(--text-faint);">no meets yet</td>
@@ -91,6 +101,40 @@
 
 {% block scripts %}
 <script>
+  // Each level's toggle switches that level's table between showing the
+  // latest meet's scores and each gymnast's best-ever score per column at
+  // this level (pooled across every meet/season she's competed it at).
+  // Scoped per card, like the sort headers below.
+  (function () {
+    document.querySelectorAll('.card').forEach(function (card) {
+      var toggle = card.querySelector('.view-toggle');
+      var table = card.querySelector('table.data-table');
+      if (!toggle || !table) return;
+
+      var buttons = toggle.querySelectorAll('.view-toggle-btn');
+      buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (btn.classList.contains('active')) return;
+          var mode = btn.getAttribute('data-mode');
+          buttons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+
+          table.querySelectorAll('tbody td.score-cell[data-latest]').forEach(function (cell) {
+            var raw = mode === 'best' ? cell.getAttribute('data-best') : cell.getAttribute('data-latest');
+            var valueSpan = cell.querySelector('.cell-value');
+            var placeSpan = cell.querySelector('.cell-place');
+            if (valueSpan) valueSpan.textContent = raw ? parseFloat(raw).toFixed(3) : '—';
+            if (placeSpan) placeSpan.style.display = mode === 'best' ? 'none' : '';
+            cell.setAttribute('data-value', raw || '');
+          });
+
+          table.querySelectorAll('tbody td[data-meet-date]').forEach(function (cell) {
+            cell.textContent = mode === 'best' ? '—' : cell.getAttribute('data-meet-date');
+          });
+        });
+      });
+    });
+  })();
+
   // Each level's table sorts independently - clicking a sortable header
   // only ever reorders the rows within that one table.
   (function () {

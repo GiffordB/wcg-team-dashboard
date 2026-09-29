@@ -411,6 +411,20 @@ table.data-table th.sortable[data-dir="desc"]::after { content: "\2193"; opacity
 }
 .filter-row a.active { background: var(--pink); color: white; }
 
+.view-toggle { display: flex; gap: 8px; margin: 10px 0 14px; }
+.view-toggle-btn {
+  font: inherit;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.view-toggle-btn.active { background: var(--pink); color: white; }
+
 .page-head {
   display: flex;
   justify-content: space-between;

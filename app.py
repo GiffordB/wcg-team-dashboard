@@ -202,14 +202,24 @@ def team_roster_rows(db):
         meets = meets_for(db, gymnast["id"])
         season_meets, _ = display_season_meets(meets)
         stats = summary_stats(season_meets)
+        level = effective_level(gymnast) or "?"
+        # Level Best pools every meet ever recorded at this level (any
+        # season), unlike Season Best AA which only looks at the current
+        # (or last completed) season - a gymnast's career-best at her
+        # level vs. how she's doing lately.
+        level_stats = summary_stats([m for m in meets if m["level"] == level])
         rows.append(
             {
                 "id": gymnast["id"],
                 "name": gymnast["name"],
-                "level": effective_level(gymnast) or "?",
+                "level": level,
                 "latest": meets[-1] if meets else None,
                 "season_meet_count": stats["meet_count"],
                 "season_best_aa": stats["best_aa"],
+                "level_best": {
+                    **{event: level_stats[f"best_{event}"] for event in EVENTS},
+                    "aa": level_stats["best_aa"],
+                },
             }
         )
 
