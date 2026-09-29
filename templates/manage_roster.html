@@ -37,15 +37,17 @@
   </form>
 </div>
 
+{% for level, rows in levels %}
 <div class="card">
-  <h2>Full Roster</h2>
+  <h2>Level {{ level }}</h2>
+  <p class="card-sub">{{ rows|length }} gymnast{{ '' if rows|length == 1 else 's' }}</p>
   <div class="table-scroll">
   <table class="data-table">
     <thead>
       <tr><th>Name</th><th>Level</th><th>Source</th><th>Status</th><th>Set Level</th><th></th></tr>
     </thead>
     <tbody>
-      {% for g in gymnasts %}
+      {% for g in rows %}
       <tr>
         <td><a href="{{ url_for('athlete', gymnast_id=g.id) }}">{{ g.name }}</a></td>
         <td>
@@ -86,5 +88,6 @@
   </table>
   </div>
 </div>
+{% endfor %}
 
 {% endblock %}

@@ -222,6 +222,20 @@ def team_roster_rows(db):
     return sorted(grouped.items(), key=lambda kv: level_sort_key(kv[0]))
 
 
+def manage_roster_rows(db):
+    """Every gymnast, active or removed, grouped by level in the same
+    most-advanced-first order as the Team Roster page - active gymnasts
+    listed above removed ones within each level group."""
+    all_gymnasts = db.execute("SELECT * FROM gymnasts ORDER BY name").fetchall()
+    grouped = {}
+    for g in all_gymnasts:
+        level = effective_level(g) or "?"
+        grouped.setdefault(level, []).append(g)
+    for rows in grouped.values():
+        rows.sort(key=lambda r: (r["active"] == 0, r["name"]))
+    return sorted(grouped.items(), key=lambda kv: level_sort_key(kv[0]))
+
+
 def last_scrape_status(db):
     return db.execute("SELECT * FROM scrape_log ORDER BY id DESC LIMIT 1").fetchone()
 
@@ -296,13 +310,11 @@ def athlete(gymnast_id):
 @app.route("/roster")
 def manage_roster():
     db = get_db()
-    all_gymnasts = db.execute(
-        "SELECT * FROM gymnasts ORDER BY active DESC, name"
-    ).fetchall()
+    levels = manage_roster_rows(db)
     db.close()
     return render_template(
         "manage_roster.html",
-        gymnasts=all_gymnasts,
+        levels=levels,
         error=request.args.get("error"),
         message=request.args.get("message"),
     )
@@ -389,6 +401,23 @@ def set_level_override(gymnast_id):
         return redirect(url_for("manage_roster", message=f"Set {gymnast['name']} to Level {level}."))
     return redirect(url_for("manage_roster", message=f"Cleared the level override for {gymnast['name']}."))
 
+
+
+@app.route("/internal/diagnostics")
+def diagnostics():
+    """Read-only check of whether team.db is actually landing on the
+    mounted persistent disk, for debugging why manual roster edits keep
+    getting wiped - see gymdata.DB_PATH."""
+    if not SCRAPE_SECRET or request.args.get("key") != SCRAPE_SECRET:
+        abort(403)
+    from gymdata import DB_PATH
+    return jsonify({
+        "db_path": str(DB_PATH),
+        "db_path_env_var_set": "DB_PATH" in os.environ,
+        "db_exists": DB_PATH.exists(),
+        "parent_dir_exists": DB_PATH.parent.exists(),
+        "parent_dir_is_mount": os.path.ismount(DB_PATH.parent) if DB_PATH.parent.exists() else None,
+    })
 
 
 @app.route("/internal/scrape", methods=["POST"])
